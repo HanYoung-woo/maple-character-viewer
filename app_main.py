@@ -13,13 +13,14 @@ st.set_page_config(
 # 🎨 [CSS 스타일 설정]
 st.markdown("""
 <style>
-/* 사이드바 내 체크박스 간격 미세 조정 (상하 여백 균형 맞춤) */
+/* 사이드바 체크박스 간격 촘촘하게 유지 */
 [data-testid="stSidebar"] [data-testid="stCheckbox"] {
     margin-bottom: -10px;
 }
-[data-testid="stSidebar"] [data-testid="stCheckbox"]:last-child,
+/* 맨 마지막 캐릭터 항목 아래에만 보정 여백을 주어 상하 대칭 완벽 유지 */
 [data-testid="stSidebar"] [data-testid="stElementContainer"]:last-child [data-testid="stCheckbox"] {
     margin-bottom: 0px;
+    padding-bottom: 10px;
 }
 
 .char-card {
@@ -227,7 +228,6 @@ with st.sidebar:
     for server_name in sorted_servers_for_sidebar:
         chars = characters_by_server[server_name]
         
-        # [Option 1 적용] 서버 아코디언 구현
         with st.expander(f"🏰 {server_name} ({len(chars)}명)", expanded=True):
             # 아코디언 내부 맨 위에 '전체선택' 체크박스 배치
             st.checkbox(
