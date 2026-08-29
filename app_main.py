@@ -13,9 +13,13 @@ st.set_page_config(
 # 🎨 [CSS 스타일 설정]
 st.markdown("""
 <style>
-/* 사이드바 내 체크박스 간격 미세 조정 */
+/* 사이드바 내 체크박스 간격 미세 조정 (상하 여백 균형 맞춤) */
 [data-testid="stSidebar"] [data-testid="stCheckbox"] {
     margin-bottom: -10px;
+}
+[data-testid="stSidebar"] [data-testid="stCheckbox"]:last-child,
+[data-testid="stSidebar"] [data-testid="stElementContainer"]:last-child [data-testid="stCheckbox"] {
+    margin-bottom: 0px;
 }
 
 .char-card {
