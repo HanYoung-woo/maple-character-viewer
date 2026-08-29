@@ -218,20 +218,18 @@ with st.sidebar:
     for server_name in sorted_servers_for_sidebar:
         chars = characters_by_server[server_name]
         
-        # 서버 아코디언 + 서버 전체선택 체크박스 배치
-        srv_col1, srv_col2 = st.columns([1.4, 1])
-        with srv_col1:
-            expander = st.expander(f"🏰 {server_name} ({len(chars)}명)", expanded=True)
-        with srv_col2:
+        # 서버별 아코디언 생성
+        with st.expander(f"🏰 {server_name} ({len(chars)}명)", expanded=True):
+            # 아코디언 내부 맨 위에 서버 전체 선택 체크박스 배치
             st.checkbox(
-                "서버 전체", 
+                f"전체 선택 ({server_name})", 
                 key=f"server_select_{selected_account}_{server_name}",
                 on_change=toggle_server_characters,
                 args=(server_name,)
             )
-
-        # 아코디언 내부 캐릭터 체크박스 목록
-        with expander:
+            st.markdown("---")
+            
+            # 아코디언 내부 캐릭터 체크박스 목록
             for char_info in chars:
                 c_name = char_info["name"]
                 c_level = char_info["level"]
