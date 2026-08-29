@@ -1,0 +1,2 @@
+# Streamlit secrets 폴더 차단 (API 키 유출 방지)
+.streamlit/
