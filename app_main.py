@@ -2,11 +2,12 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 
+# 1. 페이지 설정
 st.set_page_config(
     page_title="서버별 메이플 캐릭터 통합 조회기", 
     page_icon="🍁", 
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # 🎨 [CSS 스타일 설정]
@@ -41,7 +42,7 @@ st.markdown("""
     max-width: 180px;
     object-fit: contain;
     display: block;
-    transform: scale(1.5);
+    transform: scale(1.4);
     transform-origin: center center;
     margin-top: -15px !important;
     margin-bottom: -15px !important;
@@ -70,8 +71,6 @@ st.markdown("""
     display: inline-block;
     margin-bottom: 4px;
 }
-
-/* 🔗 링크스킬 3행 4열 그리드 레이아웃 */
 .link-section {
     margin-top: 4px;
 }
@@ -107,12 +106,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 💡 [계정 및 캐릭터 관리] 
+# 💡 [계정 및 캐릭터 관리 데이터]
 MY_ACCOUNTS = {
     "메인 계정": [
         {"name": "푼수Len", "server": "노바", "level": 275, "job": "패스파인더"},
         {"name": "푼수윈브s", "server": "스카니아", "level": 260, "job": "나이트로드"},
-        {"name": "본캐릭터2", "server": "스카니아", "level": 260, "job": "나이트로드"},
+        {"name": "푼수제로", "server": "스카니아", "level": 260, "job": "나이트로드"},
         {"name": "본캐릭터3", "server": "루나", "level": 250, "job": "아델"}
     ],
     "부계정 1": [
@@ -126,33 +125,40 @@ MY_ACCOUNTS = {
 
 SERVER_ORDER = ["스카니아", "루나", "베라", "크로아", "유니온", "엘리시움", "제니스", "노바", "이노시스", "오로라", "리부트", "리부트2"]
 
+# 2. 사이드바 구성
 with st.sidebar:
-    st.header("⚙️ 설정")
-    API_KEY = st.text_input("API 키 입력", type="password")
+    st.title("⚙️ 설정 & 계정 선택")
     
-    st.markdown("---")
-    debug_mode = st.checkbox("🐞 디버그 모드 활성화 (API 원본 확인)", value=False)
+    # 🔑 Secrets에서 API 키 자동 처리
+    if "NEXON_API_KEY" in st.secrets:
+        API_KEY = st.secrets["NEXON_API_KEY"]
+        st.success("🔒 API 키가 자동으로 연결되었습니다.")
+    else:
+        API_KEY = st.text_input("Nexon API 키 직접 입력", type="password")
+
+    # 🛠️ 디버그 모드 토글 (기본값: False / 디버그 버튼 제거 및 수동 토글로 처리)
+    debug_mode = st.toggle("🛠️ 디버그 모드 활성화", value=False)
     
     st.markdown("---")
     st.subheader("📂 메이플 계정 선택")
     selected_account = st.selectbox("조회할 계정을 선택하세요", list(MY_ACCOUNTS.keys()))
     available_characters = MY_ACCOUNTS[selected_account]
-    
+
     st.markdown("---")
-    st.subheader(f"📌 {selected_account} 캐릭터 선택")
-    
+    st.subheader("📌 캐릭터 선택")
+
     characters_by_server = {}
     for char_info in available_characters:
         srv = char_info["server"]
         if srv not in characters_by_server:
             characters_by_server[srv] = []
         characters_by_server[srv].append(char_info)
-    
+
     sorted_servers_for_sidebar = sorted(
         characters_by_server.keys(), 
         key=lambda x: SERVER_ORDER.index(x) if x in SERVER_ORDER else 999
     )
-    
+
     selected_chars = []
     for server_name in sorted_servers_for_sidebar:
         chars = characters_by_server[server_name]
@@ -168,11 +174,12 @@ with st.sidebar:
     st.markdown("---")
     load_btn = st.button("🔄 캐릭터 정보 조회", use_container_width=True)
 
+# 3. 메인 화면 영역
 st.title("🍁 서버별 메이플스토리 캐릭터 통합 조회기")
 
 if load_btn:
     if not API_KEY:
-        st.warning("⚠️ API 키를 입력해주세요!")
+        st.warning("⚠️ Secrets 설정이 없거나 API 키가 입력되지 않았습니다.")
     elif not selected_chars:
         st.warning("⚠️ 조회할 캐릭터를 하나 이상 체크해주세요!")
     else:
@@ -181,10 +188,10 @@ if load_btn:
             "x-nxopen-api-key": API_KEY.strip()
         }
         
-        # 💡 안전하게 확정된 어제 날짜(YYYY-MM-DD)를 조회 기준으로 설정합니다.
-        target_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        yesterday_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        two_days_ago_date = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
         
-        st.info(f"[{selected_account}] 기준일자({target_date}) 데이터를 불러오는 중입니다...")
+        st.info(f"[{selected_account}] 데이터 수집 중입니다... (기준일자: {yesterday_date})")
         
         servers_data = {}
         failed_chars = []
@@ -196,44 +203,34 @@ if load_btn:
             if res.status_code == 200:
                 ocid = res.json().get("ocid")
                 
-                # 1. 기본 정보 API
+                target_date = yesterday_date
                 basic_url = f"https://open.api.nexon.com/maplestory/v1/character/basic?ocid={ocid}&date={target_date}"
                 b_res = requests.get(basic_url, headers=headers)
+                
+                if b_res.status_code != 200 and "OPENAPI00009" in b_res.text:
+                    target_date = two_days_ago_date
+                    basic_url = f"https://open.api.nexon.com/maplestory/v1/character/basic?ocid={ocid}&date={target_date}"
+                    b_res = requests.get(basic_url, headers=headers)
 
-                # 2. 💡 인기도 전용 API (CharacterPopularity)
                 pop_url = f"https://open.api.nexon.com/maplestory/v1/character/popularity?ocid={ocid}&date={target_date}"
                 p_res = requests.get(pop_url, headers=headers)
 
-                # 3. 장비 정보 API
                 item_url = f"https://open.api.nexon.com/maplestory/v1/character/item-equipment?ocid={ocid}&date={target_date}"
                 i_res = requests.get(item_url, headers=headers)
                 
-                # 4. 어빌리티 API
                 ability_url = f"https://open.api.nexon.com/maplestory/v1/character/ability?ocid={ocid}&date={target_date}"
                 a_res = requests.get(ability_url, headers=headers)
                 
-                # 5. 링크스킬 API
                 link_url = f"https://open.api.nexon.com/maplestory/v1/character/link-skill?ocid={ocid}&date={target_date}"
                 l_res = requests.get(link_url, headers=headers)
 
                 if b_res.status_code == 200:
                     b_data = b_res.json()
                     
-                    # 💡 인기도 전용 API 파싱
                     popularity = 0
                     if p_res.status_code == 200:
                         p_data = p_res.json()
                         popularity = p_data.get("popularity", 0) or 0
-                    
-                    # 🐞 디버그 모드: 원본 응답 확인
-                    if debug_mode:
-                        with st.expander(f"🔍 [디버그] {name} - 인기도(/character/popularity) 원본 응답"):
-                            st.write(f"**기준 날짜:** `{target_date}`")
-                            st.write(f"**popularity 추출값:** `{popularity}`")
-                            if p_res.status_code == 200:
-                                st.json(p_res.json())
-                            else:
-                                st.error(f"인기도 API 호출 실패 (Status: {p_res.status_code})")
 
                     world_name = b_data.get("world_name", "기타 서버")
                     cur_exp = b_data.get("character_exp", 0)
@@ -344,19 +341,19 @@ if load_btn:
                         servers_data[world_name] = []
                     servers_data[world_name].append(char_info)
                 else:
-                    failed_chars.append(name)
+                    failed_chars.append(f"{name} (기본정보 실패: Status {b_res.status_code} - {b_res.text})")
             else:
-                failed_chars.append(name)
+                failed_chars.append(f"{name} (OCID 조회 실패: Status {res.status_code} - {res.text})")
         
-        # 화면 출력
+        # 디버그 모드 켜져 있을 때만 Raw Log 출력
+        if debug_mode and failed_chars:
+            st.error("🛠️ [디버그 레포트] 실패 내역")
+            for err in failed_chars:
+                st.code(err)
+
         if not servers_data:
-            st.error("조회된 캐릭터가 없습니다. API 키나 캐릭터 이름을 확인해주세요.")
-            if failed_chars:
-                st.warning(f"⚠️ 캐릭터 정보를 불러오지 못했습니다: {', '.join(failed_chars)}")
+            st.error("❌ 캐릭터 정보를 불러오지 못했습니다.")
         else:
-            if failed_chars:
-                st.warning(f"⚠️ 다음 캐릭터들은 정보를 불러오지 못했습니다: {', '.join(failed_chars)}")
-                
             sorted_server_names = sorted(
                 servers_data.keys(),
                 key=lambda x: SERVER_ORDER.index(x) if x in SERVER_ORDER else 999
@@ -430,4 +427,4 @@ if load_btn:
                         
                         st.markdown(raw_html, unsafe_allow_html=True)
 else:
-    st.info("👈 사이드바에서 계정을 고르고, 서버별 아코디언을 열어 캐릭터를 선택한 뒤 **[캐릭터 정보 조회]** 버튼을 눌러주세요!")
+    st.info("👈 사이드바에서 계정을 고르고 **[캐릭터 정보 조회]** 버튼을 눌러주세요!")
