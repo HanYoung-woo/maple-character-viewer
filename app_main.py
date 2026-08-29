@@ -135,46 +135,46 @@ else:
         st.header("⚙️ 설정")
         API_KEY = st.text_input("API 키 입력", type="password")
         
-        st.markdown("---")
-        st.subheader("📂 메이플 계정 선택")
-        selected_account = st.selectbox("조회할 계정을 선택하세요", list(MY_ACCOUNTS.keys()))
-        available_characters = MY_ACCOUNTS[selected_account]
-        
-        st.markdown("---")
-        st.subheader(f"📌 {selected_account} 캐릭터 선택")
-        
-        characters_by_server = {}
-        for char_info in available_characters:
-            srv = char_info["server"]
-            if srv not in characters_by_server:
-                characters_by_server[srv] = []
-            characters_by_server[srv].append(char_info)
-        
-        sorted_servers_for_sidebar = sorted(
-            characters_by_server.keys(), 
-            key=lambda x: SERVER_ORDER.index(x) if x in SERVER_ORDER else 999
-        )
-        
-        selected_chars = []
-        for server_name in sorted_servers_for_sidebar:
-            chars = characters_by_server[server_name]
-            with st.expander(f"🏰 {server_name} 서버", expanded=True):
-                for char_info in chars:
-                    c_name = char_info["name"]
-                    c_level = char_info["level"]
-                    c_job = char_info["job"]
-                    label = f"{c_name} (Lv.{c_level} / {c_job})"
-                    if st.checkbox(label, value=True, key=f"chk_{selected_account}_{server_name}_{c_name}"):
-                        selected_chars.append(c_name)
-            
-        st.markdown("---")
-        load_btn = st.button("🔄 캐릭터 정보 조회", use_container_width=True)
+st.markdown("---")
+st.subheader("📂 메이플 계정 선택")
+selected_account = st.selectbox("조회할 계정을 선택하세요", list(MY_ACCOUNTS.keys()))
+available_characters = MY_ACCOUNTS[selected_account]
+
+st.markdown("---")
+st.subheader(f"📌 {selected_account} 캐릭터 선택")
+
+characters_by_server = {}
+for char_info in available_characters:
+    srv = char_info["server"]
+    if srv not in characters_by_server:
+        characters_by_server[srv] = []
+    characters_by_server[srv].append(char_info)
+
+sorted_servers_for_sidebar = sorted(
+    characters_by_server.keys(), 
+    key=lambda x: SERVER_ORDER.index(x) if x in SERVER_ORDER else 999
+)
+
+selected_chars = []
+for server_name in sorted_servers_for_sidebar:
+    chars = characters_by_server[server_name]
+    with st.expander(f"🏰 {server_name} 서버", expanded=True):
+        for char_info in chars:
+            c_name = char_info["name"]
+            c_level = char_info["level"]
+            c_job = char_info["job"]
+            label = f"{c_name} (Lv.{c_level} / {c_job})"
+            if st.checkbox(label, value=True, key=f"chk_{selected_account}_{server_name}_{c_name}"):
+                selected_chars.append(c_name)
+    
+st.markdown("---")
+load_btn = st.button("🔄 캐릭터 정보 조회", use_container_width=True)
 
 st.title("🍁 서버별 메이플스토리 캐릭터 통합 조회기")
 
 if load_btn:
     if not API_KEY:
-        st.warning("⚠️ API 키를 입력해주세요!")
+        st.warning("⚠️ API 키를 입력 또는 설정해주세요!")
     elif not selected_chars:
         st.warning("⚠️ 조회할 캐릭터를 하나 이상 체크해주세요!")
     else:
