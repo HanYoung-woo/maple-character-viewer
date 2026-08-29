@@ -20,7 +20,7 @@ st.markdown("""
 /* 맨 마지막 캐릭터 항목 아래에만 보정 여백을 주어 상하 대칭 완벽 유지 */
 [data-testid="stSidebar"] [data-testid="stElementContainer"]:last-child [data-testid="stCheckbox"] {
     margin-bottom: 0px;
-    padding-bottom: 10px;
+    padding-bottom: 0px;
 }
 
 .char-card {
