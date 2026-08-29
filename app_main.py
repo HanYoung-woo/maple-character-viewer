@@ -147,7 +147,7 @@ if "NEXON_API_KEY" in st.secrets:
 else:
     API_KEY = ""
 
-# Session State 초기화 (결과 유지 및 선택 상태 관리용)
+# Session State 초기화
 if "search_result" not in st.session_state:
     st.session_state["search_result"] = None
 if "prev_account" not in st.session_state:
@@ -218,10 +218,10 @@ with st.sidebar:
     for server_name in sorted_servers_for_sidebar:
         chars = characters_by_server[server_name]
         
-        # 서버 헤더 영역 (서버명 + 서버 전체선택 체크박스)
-        srv_col1, srv_col2 = st.columns([1.3, 1])
+        # 서버 아코디언 + 서버 전체선택 체크박스 배치
+        srv_col1, srv_col2 = st.columns([1.4, 1])
         with srv_col1:
-            st.markdown(f"**🏰 {server_name} 서버**")
+            expander = st.expander(f"🏰 {server_name} ({len(chars)}명)", expanded=True)
         with srv_col2:
             st.checkbox(
                 "서버 전체", 
@@ -230,7 +230,8 @@ with st.sidebar:
                 args=(server_name,)
             )
 
-        with st.expander(f"캐릭터목록 ({len(chars)}명)", expanded=True):
+        # 아코디언 내부 캐릭터 체크박스 목록
+        with expander:
             for char_info in chars:
                 c_name = char_info["name"]
                 c_level = char_info["level"]
