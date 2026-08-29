@@ -103,6 +103,22 @@ st.markdown("""
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.ability-block {
+    margin-top: 4px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.5;
+}
+.ability-title {
+    font-weight: bold;
+    color: #aaa;
+    font-size: 11px;
+    margin-top: 4px;
+}
+.ability-line {
+    margin-left: 4px;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,21 +141,19 @@ MY_ACCOUNTS = {
 
 SERVER_ORDER = ["스카니아", "루나", "베라", "크로아", "유니온", "엘리시움", "제니스", "노바", "이노시스", "오로라", "리부트", "리부트2"]
 
+# 🔑 Secrets에서 API 키 로드
+if "NEXON_API_KEY" in st.secrets:
+    API_KEY = st.secrets["NEXON_API_KEY"]
+else:
+    API_KEY = ""
+
 # 2. 사이드바 구성
 with st.sidebar:
-    st.title("⚙️ 설정 & 계정 선택")
+    st.title("⚙️ 계정 및 캐릭터 선택")
     
-    # 🔑 Secrets에서 API 키 자동 처리
-    if "NEXON_API_KEY" in st.secrets:
-        API_KEY = st.secrets["NEXON_API_KEY"]
-        st.success("🔒 API 키가 자동으로 연결되었습니다.")
-    else:
+    if not API_KEY:
         API_KEY = st.text_input("Nexon API 키 직접 입력", type="password")
-
-    # 🛠️ 디버그 모드 토글 (기본값: False / 디버그 버튼 제거 및 수동 토글로 처리)
-    debug_mode = st.toggle("🛠️ 디버그 모드 활성화", value=False)
     
-    st.markdown("---")
     st.subheader("📂 메이플 계정 선택")
     selected_account = st.selectbox("조회할 계정을 선택하세요", list(MY_ACCOUNTS.keys()))
     available_characters = MY_ACCOUNTS[selected_account]
@@ -286,17 +300,19 @@ if load_btn:
                     else:
                         guild_name = "길드 없음"
 
-                    ability_info = {"1": "정보 없음", "2": "정보 없음", "3": "정보 없음"}
+                    # 💡 어빌리티 데이터 처리 (각 줄별 배열 저장)
+                    ability_info = {"1": [], "2": [], "3": []}
                     ability_point = 0
                     if a_res.status_code == 200:
                         a_data = a_res.json()
                         ability_point = a_data.get("remain_fame", 0)
-                        presets = ["ability_preset_1", "ability_preset_2", "ability_preset_3"]
-                        for idx, p_key in enumerate(presets, 1):
+                        presets = [("1", "ability_preset_1"), ("2", "ability_preset_2"), ("3", "ability_preset_3")]
+                        for p_num, p_key in presets:
                             p_data = a_data.get(p_key)
                             if p_data and p_data.get("ability_info"):
-                                lines = [f"[{item.get('ability_grade')}] {item.get('ability_value')}" for item in p_data.get("ability_info")]
-                                ability_info[str(idx)] = " / ".join(lines)
+                                for item in p_data.get("ability_info"):
+                                    line = f"[{item.get('ability_grade')}] {item.get('ability_value')}"
+                                    ability_info[p_num].append(line)
 
                     link_presets = {"1": [], "2": [], "3": []}
                     if l_res.status_code == 200:
@@ -341,15 +357,9 @@ if load_btn:
                         servers_data[world_name] = []
                     servers_data[world_name].append(char_info)
                 else:
-                    failed_chars.append(f"{name} (기본정보 실패: Status {b_res.status_code} - {b_res.text})")
+                    failed_chars.append(f"{name} (기본정보 실패: Status {b_res.status_code})")
             else:
-                failed_chars.append(f"{name} (OCID 조회 실패: Status {res.status_code} - {res.text})")
-        
-        # 디버그 모드 켜져 있을 때만 Raw Log 출력
-        if debug_mode and failed_chars:
-            st.error("🛠️ [디버그 레포트] 실패 내역")
-            for err in failed_chars:
-                st.code(err)
+                failed_chars.append(f"{name} (OCID 조회 실패: Status {res.status_code})")
 
         if not servers_data:
             st.error("❌ 캐릭터 정보를 불러오지 못했습니다.")
@@ -370,10 +380,23 @@ if load_btn:
                         guild_display = f"{char['guild_name']} (Lv.{char['guild_level']} | GP: {char['guild_gp']:,})" if isinstance(char['guild_gp'], int) else f"{char['guild_name']}"
                         
                         img_html = f'<img src="{char["image"]}" class="char-image" />' if char['image'] else ''
-                        ab1 = char['ability_info']['1']
-                        ab2 = char['ability_info']['2']
-                        ab3 = char['ability_info']['3']
 
+                        # 💡 어빌리티 HTML 블록 생성 (세로 정렬)
+                        ability_html_blocks = []
+                        for p_idx in ["1", "2", "3"]:
+                            lines = char["ability_info"][p_idx]
+                            if lines:
+                                lines_html = "".join([f'<div class="ability-line">{line}</div>' for line in lines])
+                            else:
+                                lines_html = '<div class="ability-line" style="color: #777;">정보 없음</div>'
+                            
+                            ability_html_blocks.append(
+                                f'<div class="ability-title">[{p_idx}번 프리셋]</div>'
+                                f'{lines_html}'
+                            )
+                        full_ability_html = "".join(ability_html_blocks)
+
+                        # 링크스킬 HTML 블록 생성
                         link_html_blocks = []
                         for p_idx in ["1", "2", "3"]:
                             skills = char["link_presets"][p_idx]
@@ -413,11 +436,7 @@ if load_btn:
                             f'<div class="info-row">📌 <b>길드 출석:</b> <span style="color: #2ed573; font-weight: bold;">{char["attendance"]}</span></div>'
                             f'<hr style="border: 0; border-top: 1px solid rgba(250,250,250,0.1); margin: 6px 0;" />'
                             f'<div class="info-row"><b>💡 어빌리티 (보유 명성치: {char["ability_point"]:,})</b></div>'
-                            f'<div style="font-size: 12px; color: #ccc; line-height: 1.4;">'
-                            f'<div><b>[1번]</b> {ab1}</div>'
-                            f'<div><b>[2번]</b> {ab2}</div>'
-                            f'<div><b>[3번]</b> {ab3}</div>'
-                            f'</div>'
+                            f'<div class="ability-block">{full_ability_html}</div>'
                             f'<hr style="border: 0; border-top: 1px solid rgba(250,250,250,0.1); margin: 6px 0;" />'
                             f'<div class="info-row"><b>🔗 링크 스킬 정보</b></div>'
                             f'<div class="link-section">{full_link_html}</div>'
