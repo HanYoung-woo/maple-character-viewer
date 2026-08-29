@@ -119,6 +119,17 @@ st.markdown("""
 .ability-line {
     margin-left: 4px;
 }
+
+/* 사이드바 서버 헤더 스타일 레이아웃 조정 */
+div[data-testid="stHorizontalBlock"] > div:nth-child(1) {
+    display: flex;
+    align-items: center;
+}
+div[data-testid="stHorizontalBlock"] > div:nth-child(2) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -218,18 +229,20 @@ with st.sidebar:
     for server_name in sorted_servers_for_sidebar:
         chars = characters_by_server[server_name]
         
-        # 서버별 아코디언 생성
-        with st.expander(f"🏰 {server_name} ({len(chars)}명)", expanded=True):
-            # 아코디언 내부 맨 위에 서버 전체 선택 체크박스 배치
+        # '스카니아 (2명) □ 전체선택' 형태로 구성
+        header_col1, header_col2 = st.columns([1.3, 1])
+        with header_col1:
+            st.markdown(f"**🏰 {server_name} ({len(chars)}명)**")
+        with header_col2:
             st.checkbox(
-                f"전체 선택 ({server_name})", 
+                "전체선택", 
                 key=f"server_select_{selected_account}_{server_name}",
                 on_change=toggle_server_characters,
                 args=(server_name,)
             )
-            st.markdown("---")
-            
-            # 아코디언 내부 캐릭터 체크박스 목록
+
+        # 서버 아래 아코디언 영역
+        with st.expander(f"캐릭터 목록 열기/접기", expanded=True):
             for char_info in chars:
                 c_name = char_info["name"]
                 c_level = char_info["level"]
