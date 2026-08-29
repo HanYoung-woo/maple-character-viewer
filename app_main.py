@@ -13,6 +13,11 @@ st.set_page_config(
 # 🎨 [CSS 스타일 설정]
 st.markdown("""
 <style>
+/* 사이드바 내 체크박스 간격 미세 조정 */
+[data-testid="stSidebar"] [data-testid="stCheckbox"] {
+    margin-bottom: -10px;
+}
+
 .char-card {
     display: flex;
     flex-direction: row;
@@ -227,7 +232,12 @@ with st.sidebar:
                 on_change=toggle_server_characters,
                 args=(server_name,)
             )
-            st.markdown("---")
+            
+            # 간격을 완전히 줄인 여백 제거형 구분선
+            st.markdown(
+                '<hr style="margin-top: 2px; margin-bottom: 6px; border: 0; border-top: 1px solid rgba(250, 250, 250, 0.2);" />', 
+                unsafe_allow_html=True
+            )
             
             # 그 아래 개별 캐릭터 체크박스 나열
             for char_info in chars:
