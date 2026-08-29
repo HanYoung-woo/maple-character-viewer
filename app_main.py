@@ -127,6 +127,7 @@ MY_ACCOUNTS = {
 SERVER_ORDER = ["스카니아", "루나", "베라", "크로아", "유니온", "엘리시움", "제니스", "노바", "이노시스", "오로라", "리부트", "리부트2"]
 
 # 💡 Secrets에 설정된 API Key를 가져오고, 없으면 사이드바 입력창을 보여주는 안전한 방식
+# Secrets에 NEXON_API_KEY가 등록되어 있으면 가져오고, 없으면 입력창 표시
 if "NEXON_API_KEY" in st.secrets:
     API_KEY = st.secrets["NEXON_API_KEY"]
 else:
